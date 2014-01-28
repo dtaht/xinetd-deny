@@ -1,0 +1,19 @@
+* DONE basic new deny_server and deny_args stanza parsing
+* DONE basic env API
+  there are more reasons to deny a server than you necessarily
+  want to invoke a blocking script on.
+
+* ENV VARS passed to script
+** FAMILY
+** SRC
+** DST
+** SRC_PORT
+** DST_PORT
+** PROTOCOL
+** REASON
+** ACTION
+** TIMEOUT
+
+* TODO figure out call paths to invoke the deny server on
+* figure out how to correctly pass new ENV vars
+  shell scripts don't have easy access to sockets and ports 
