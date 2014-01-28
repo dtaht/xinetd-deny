@@ -108,6 +108,8 @@ struct service_config
    uid_t                sc_uid ;
    gid_t                sc_user_gid ;          /* gid corresponding to uid    */
    gid_t                sc_gid ;               /* gid corresponding to group  */
+   char                *sc_deny ;
+   char               **sc_deny_argv ;
    char                *sc_server ;
    char               **sc_server_argv ;
    int                  sc_instances ;
@@ -182,6 +184,8 @@ struct service_config
 #define SC_USER_GID( scp )       (scp)->sc_user_gid
 #define SC_SERVER( scp )         (scp)->sc_server
 #define SC_SERVER_ARGV( scp )    (scp)->sc_server_argv
+#define SC_DENY( scp )           (scp)->sc_deny
+#define SC_DENY_ARGV( scp )      (scp)->sc_deny_argv
 #define SC_ONLY_FROM( scp )      (scp)->sc_only_from
 #define SC_NO_ACCESS( scp )      (scp)->sc_no_access
 #define SC_ACCESS_TIMES( scp )   (scp)->sc_access_times

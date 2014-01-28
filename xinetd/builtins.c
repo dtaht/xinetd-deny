@@ -45,6 +45,8 @@ static void stream_echo(const struct server *) ;
 static void dgram_echo(const struct server *) ;
 static void stream_discard(const struct server *) ;
 static void dgram_discard(const struct server *) ;
+static void stream_sensor(const struct server *) ;
+static void dgram_sensor(const struct server *) ;
 static void stream_time(const struct server *) ;
 static void dgram_time(const struct server *) ;
 static void stream_daytime(const struct server *) ;
@@ -78,8 +80,8 @@ static const struct builtin_service builtin_services[] =
       { "daytime",   SOCK_DGRAM,    { dgram_daytime,   NO_FORK } },
       { "chargen",   SOCK_STREAM,   { stream_chargen,  FORK    } },
       { "chargen",   SOCK_DGRAM,    { dgram_chargen,   NO_FORK } },
-      { "sensor",    SOCK_STREAM,   { stream_discard,  NO_FORK } },
-      { "sensor",    SOCK_DGRAM,    { dgram_discard,   NO_FORK } },
+      { "sensor",    SOCK_STREAM,   { stream_sensor,   FORK } },
+      { "sensor",    SOCK_DGRAM,    { dgram_sensor,    FORK } },
       { "tcpmux",    SOCK_STREAM,   { tcpmux_handler,  FORK    } },
       { NULL,        0,             { NULL,            0       } }
    } ;
@@ -212,6 +214,62 @@ static void stream_discard( const struct server *serp )
 
 
 static void dgram_discard( const struct server *serp )
+{
+   char buf[ 1 ] ;
+
+   (void) recv( SERVER_FD( serp ), buf, sizeof( buf ), 0 ) ;
+}
+
+
+/* Put in environment ACTION, TIMEOUT, FAMILY, SRC, DST, SRC_PORT, DST_PORT, 
+   PROTO 
+   
+*/
+
+static int env_setup (const struct server *serp) {
+  char buf[255];
+  int rc = 0;
+  rc |= putenv("ACTION=BLOCK");
+  rc |= putenv("TIMEOUT=120");
+  rc |= putenv("FAMILY=IPV6");
+  rc |= putenv("SRC=127.0.0.1");
+  rc |= putenv("DST=127.0.0.2");
+  rc |= putenv("SRC_PORT=22");
+  rc |= putenv("DST_PORT=22");
+  rc |= putenv("PROTOCOL=6");
+  return(rc);
+}
+
+static void stream_sensor( const struct server *serp )
+{
+   char  buf[ BUFFER_SIZE ] ;
+   ssize_t   cc ;
+   int    descriptor = SERVER_FD( serp ) ;
+   struct service *svc = SERVER_SERVICE( serp ) ;;
+
+   if( SVC_WAITS( svc ) ) {
+      descriptor = accept(descriptor, NULL, NULL);
+      if ( descriptor == -1 ) {
+         if ((errno == EMFILE) || (errno == ENFILE))
+            cps_service_stop(svc, "no available descriptors");
+         return;
+      }
+   }
+
+   close_all_svc_descriptors();
+
+   for ( ;; )
+   {
+      cc = read( descriptor, buf, sizeof( buf ) ) ;
+      if ( (cc == 0) || ((cc == (ssize_t)-1) && (errno != EINTR)) )
+         break ;
+   }
+   if( SVC_WAITS( svc ) ) /* Service forks, so close it */
+      Sclose(descriptor);
+}
+
+
+static void dgram_sensor( const struct server *serp )
 {
    char buf[ 1 ] ;
 

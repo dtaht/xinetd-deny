@@ -432,6 +432,104 @@ status_e server_parser( pset_h values,
 }
 
 
+status_e deny_parser( pset_h values, 
+                        struct service_config *scp, 
+                        enum assign_op op )
+{
+   char *server = (char *) pset_pointer( values, 0 ) ;
+   const char *func = "deny_parser" ;
+   struct stat sb;
+
+   /* 
+    * Access is used so that the real user ID permissions
+    * are checked.
+    */
+   if ( access( server, X_OK ) == -1 )
+   {
+      parsemsg( LOG_ERR, func, "Server %s is not executable", server ) ;
+      return( FAILED ) ;
+   }
+   if (stat(server, &sb) == -1)
+   {
+      parsemsg( LOG_ERR, func, "Unable to stat: %s.", server ) ;
+      return( FAILED ) ;
+   }
+
+   SC_DENY(scp) = new_string( server ) ;
+   if ( SC_DENY(scp) == NULL )
+   {
+      out_of_memory( func ) ;
+      return( FAILED ) ;
+   }
+   return( OK ) ;
+}
+
+status_e deny_args_parser( pset_h values, 
+                             struct service_config *scp, 
+                             enum assign_op op )
+{
+   char **argv ;
+   unsigned u ;
+   unsigned i ;
+   unsigned count;
+   unsigned argv_index ;
+   unsigned n_args = pset_count( values ) ;
+   const char *func = "deny_args_parser" ;
+
+   /*
+    * Create the argv for a future exec call
+    * Reserve space for the server. We cannot use scp->sc_server
+    * since it may not have a value yet.
+    */
+   argv = argv_alloc( n_args+1 ) ;
+   count = pset_count( values );
+   if ( count == 0 )
+   {
+       missing_attr_msg("deny_args_parser", "deny_args");
+       free( (char *) argv ) ;
+       return FAILED;
+   }
+   
+   if( SC_NAMEINARGS( scp ) )
+   {
+      for (u = 0; u < count; u++)
+      {
+         register char *s = new_string( (char *) pset_pointer( values, u )) ;
+
+         if ( s == NULL )
+         {
+             for ( i = 1 ; i < u ; i++ )
+               free( argv[ i ] ) ;
+             free( (char *) argv ) ;
+             out_of_memory( func ) ;
+             return( FAILED ) ;
+         }
+         argv[ u ] = s ;
+      }
+   }
+   else
+   {
+      for (u = 0, argv_index = 1 ; u < count; u++, argv_index++)
+      {
+         register char *s = new_string((char *) pset_pointer( values, u )) ;
+
+         if ( s == NULL )
+         {
+             for ( i = 1 ; i < argv_index ; i++ )
+               free( argv[ i ] ) ;
+             free( (char *) argv ) ;
+             out_of_memory( func ) ;
+             return( FAILED ) ;
+         }
+         argv[ argv_index ] = s ;
+      }
+      argv[ argv_index ] = argv[ 0 ] = NULL ;
+   }
+   SC_DENY_ARGV(scp) = argv ;
+   return( OK ) ;
+}
+
+
 status_e server_args_parser( pset_h values, 
                              struct service_config *scp, 
                              enum assign_op op )

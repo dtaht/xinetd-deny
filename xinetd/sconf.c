@@ -80,6 +80,7 @@ void sc_free( struct service_config *scp )
    COND_FREE( SC_ID(scp) ) ;
    COND_FREE( SC_PROTONAME(scp) ) ;
    COND_FREE( SC_SERVER(scp) ) ;
+   COND_FREE( SC_DENY(scp) ) ;
    COND_FREE( (char *)SC_REDIR_ADDR(scp) ) ;
    COND_FREE( (char *)SC_BIND_ADDR(scp) ) ;
    COND_FREE( (char *)SC_ORIG_BIND_ADDR(scp) ) ;
@@ -98,6 +99,19 @@ void sc_free( struct service_config *scp )
       for ( pp = &SC_SERVER_ARGV(scp)[ 1 ] ; *pp != NULL ; pp++ )
          free( *pp ) ;
       free( (char *) SC_SERVER_ARGV(scp) ) ;
+   }
+   if ( SC_DENY_ARGV(scp) )
+   {
+      char **pp ;
+
+      /*
+       * argv[ 0 ] is a special case because it may not have been allocated yet
+       */
+      if ( SC_DENY_ARGV(scp)[ 0 ] != NULL)
+         free( SC_DENY_ARGV(scp)[ 0 ] ) ;
+      for ( pp = &SC_DENY_ARGV(scp)[ 1 ] ; *pp != NULL ; pp++ )
+         free( *pp ) ;
+      free( (char *) SC_DENY_ARGV(scp) ) ;
    }
    COND_FREE( LOG_GET_FILELOG( SC_LOG( scp ) )->fl_filename ) ;
 
